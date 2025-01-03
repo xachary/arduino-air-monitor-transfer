@@ -43,20 +43,24 @@ void printIP(SSD1306Wire& display) {
 }
 
 void setup(SSD1306Wire& display) {
-  WiFiManager wifiManager;
+  WiFiManager wm;
 
-  // wifiManager.resetSettings();  // 并不能清除连接记录
+  // wm.resetSettings();  // 并不能清除连接记录
   // ESP.eraseConfig();
   // delay(2000);
   // ESP.reset();
 
   printTips(display);
 
-  if (wifiManager.autoConnect("air")) {
-    printFail(display);
-  }
+  bool success = wm.autoConnect("air");
 
-  printIP(display);
+  if (success) {
+    printIP(display);
+  } else {
+    printFail(display);
+    delay(3000);
+    ESP.reset();
+  }
 }
 
 }
