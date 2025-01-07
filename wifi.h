@@ -32,13 +32,15 @@ void printFail(SSD1306Wire& display) {
   display.display();
 }
 
-void printIP(SSD1306Wire& display) {
+void printWifi(SSD1306Wire& display, bool ip) {
   display.clear();
   display.setTextAlignment(TEXT_ALIGN_LEFT);
 
   display.setFont(ArialMT_Plain_10);
   display.drawString(0, 0, "WIFI: " + WiFi.SSID());
-  display.drawString(0, 16, "IP: " + WiFi.localIP().toString());
+  if (ip) {
+    display.drawString(0, 16, "IP: " + WiFi.localIP().toString());
+  }
   display.display();
 }
 
@@ -55,7 +57,7 @@ void setup(SSD1306Wire& display) {
   bool success = wm.autoConnect("air");
 
   if (success) {
-    printIP(display);
+    printWifi(display, false);
   } else {
     printFail(display);
     delay(3000);

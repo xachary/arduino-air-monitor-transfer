@@ -4,6 +4,7 @@
 #include <ESP8266HTTPClient.h>
 
 #include "wifi.h"
+#include "rx.h"
 
 // OLED
 SSD1306Wire display(0x3c, D5, D6);
@@ -15,56 +16,82 @@ void setup() {
   // 初始化OLED
   display.init();
   display.flipScreenVertically();
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
 
   // 初始化WIFI
   MyWIFI::setup(display);
+
+  // 初始化接收器
+  Transfer::RX.init();
 }
 
-void loop() {
-  Serial.println("loop");
+// Last process time
+long lastProcessSecond = 0;
+
+void process() {
   if (WiFi.status() == WL_CONNECTED) {
     send();
   } else {
     MyWIFI::printFail(display);
   }
-  delay(3000);
+}
+
+void loop() {
+  // process each second
+  if (millis() / 1000 - lastProcessSecond >= 1) {
+    process();
+
+    lastProcessSecond = millis() / 1000;
+  }
 }
 
 void send() {
-  MyWIFI::printIP(display);
-
   // 客户端
   WiFiClient client;
   HTTPClient http;
 
-  String host = "192.168.1.43";
+  // 接口信息
+  // String host = "192.168.1.43";
   // String host = "192.168.1.12";
+  // String host = "192.168.2.1";
+  String host = "192.168.217.55";
   int port = 8081;
 
-  float value = 123.4;
+  // 接收内容
+  String json = Transfer::RX.read();
+  Serial.println();
+  Serial.print("JSON:");
+  Serial.println(json);
 
-  // 将需要发送的数据信息放入客户端请求
-  String url = "/tvoc";
-
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
-
-  display.drawString(0, 24, "Request:");
-  display.drawString(0, 32, host + ":" + port + url);
-  display.drawString(0, 40, "Value: " + (String)value);
-
-  http.begin(client, "http://" + host + ":" + (String)port + url);  //Specify request destination
-  http.addHeader("Content-Type", "text/plain");
-
-  int httpCode = http.POST((String)value);
-
-  http.end();
-
-  if (httpCode == 200) {
-    display.drawString(0, 48, "Request success!");
+  // 判断 display
+  if (json[11] == '1') {
+    display.displayOn();
   } else {
-    Serial.println(httpCode);
-    display.drawString(0, 48, "Request failed: " + (String)httpCode);
+    display.displayOff();
   }
 
-  display.display();
+  // 显示 wifi 信息
+  MyWIFI::printWifi(display, false);
+
+  if (json.length() > 0) {
+    // 有数据
+
+    // 请求
+    String url = "/batch";
+    http.begin(client, "http://" + host + ":" + (String)port + url);
+    http.addHeader("Content-Type", "application/json");
+    int httpCode = http.POST(json);
+    http.end();
+
+    // 请求结果
+    if (httpCode == 200) {
+      // 打印 json 信息，自动换行
+      display.drawStringMaxWidth(0, 13, 128, json);
+    } else {
+      Serial.println(httpCode);
+      display.drawString(0, 13, "Request failed: " + (String)httpCode);
+    }
+
+    display.display();
+  }
 }
