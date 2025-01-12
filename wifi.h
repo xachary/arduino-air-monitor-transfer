@@ -77,7 +77,8 @@ void setup(SSD1306Wire& display) {
     delay(3000);
     // 重启，回到上面的 wm.autoConnect
     // 再次重试自动连接
-    ESP.restart();
+    // ESP.restart(); // 软复位
+    ESP.reset(); // 硬复位，彻底重置设备
   }
 }
 
