@@ -16,7 +16,7 @@ void printTips(SSD1306Wire& display) {
   display.setTextAlignment(TEXT_ALIGN_LEFT);
 
   display.setFont(ArialMT_Plain_10);
-  display.drawString(0, 0, "Connect Setting");
+  display.drawString(0, 0, "Connecting...");
   display.drawString(0, 16, "1.Search the wifi 'air'");
   display.drawString(0, 24, "2.Select 'air'");
   display.drawString(0, 32, "3.Setting wifi config");
@@ -29,6 +29,15 @@ void printFail(SSD1306Wire& display) {
 
   display.setFont(ArialMT_Plain_10);
   display.drawString(0, 0, "Connect Failed");
+  display.display();
+}
+
+void printConnect(SSD1306Wire& display) {
+  display.clear();
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
+
+  display.setFont(ArialMT_Plain_10);
+  display.drawString(0, 0, "Connecting...");
   display.display();
 }
 
@@ -47,12 +56,17 @@ void printWifi(SSD1306Wire& display, bool ip) {
 void setup(SSD1306Wire& display) {
   WiFiManager wm;
 
-  // wm.resetSettings();  // 并不能清除连接记录
-  // ESP.eraseConfig();
-  // delay(2000);
-  // ESP.reset();
+  // wm.resetSettings(); // 可以清除连接记录
 
   printTips(display);
+
+  // 为了处理场景：
+  // 网络偶发连接失败后，一直卡在设置模式
+  //
+  // 如果自动连接不成功，进入设置模式后，
+  // 1分钟内没有进行设置，则 wm.autoConnect 不再等待
+  // 后面会有重启的逻辑
+  wm.setConfigPortalTimeout(60);
 
   bool success = wm.autoConnect("air");
 
@@ -61,7 +75,9 @@ void setup(SSD1306Wire& display) {
   } else {
     printFail(display);
     delay(3000);
-    ESP.reset();
+    // 重启，回到上面的 wm.autoConnect
+    // 再次重试自动连接
+    ESP.restart();
   }
 }
 

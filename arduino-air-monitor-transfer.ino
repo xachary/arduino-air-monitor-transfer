@@ -33,6 +33,9 @@ void process() {
     send();
   } else {
     MyWIFI::printFail(display);
+    delay(1000);
+    // 网络断开，直接重启
+    ESP.restart();
   }
 }
 
@@ -51,10 +54,10 @@ void send() {
   HTTPClient http;
 
   // 接口信息
-  // String host = "192.168.1.43";
+  String host = "192.168.1.43";
   // String host = "192.168.1.12";
   // String host = "192.168.2.1";
-  String host = "192.168.217.55";
+  // String host = "192.168.217.55";
   int port = 8081;
 
   // 接收内容
